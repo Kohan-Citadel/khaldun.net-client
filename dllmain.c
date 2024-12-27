@@ -150,7 +150,7 @@ int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
     DisableThreadLibraryCalls(hInstDLL);
 
     // Pin this module to memory
-    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCSTR)&p_DirectInput8Create, &hm);
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_PIN, sDInput, &hm);
 
     // SecuROM guard
     if (!LocalDirFileExists("disable_securom_guard.txt") && securom_check(hm))
