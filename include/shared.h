@@ -10,8 +10,6 @@ int __stdcall hk_bind(SOCKET s, struct sockaddr* addr, int namelen);
 LPHOSTENT __stdcall hk_gethostbyname(const char* name);
 
 static const char* sDInput = "dinput.dll";
-static const char* sDInput8 = "dinput8.dll";
-static const char* sDSound = "dsound.dll";
 static const char* pModName = 0;
 
 typedef long (__stdcall *DllRegisterServer_fn)(void);
@@ -40,7 +38,7 @@ long __stdcall p_DllRegisterServer(void) {
   #pragma comment(linker, "/EXPORT:DllRegisterServer=_p_DllRegisterServer@0")
 #endif
 
-  if (pModName == sDInput || pModName == sDInput8) {
+  if (pModName == sDInput ) {
     if (!oDllRegisterServer)
       oDllRegisterServer = GetSysProc(pModName, "DllRegisterServer");
     if (oDllRegisterServer)
@@ -57,7 +55,7 @@ long __stdcall p_DllUnregisterServer(void) {
   #pragma comment(linker, "/EXPORT:DllUnregisterServer=_p_DllUnregisterServer@0")
 #endif
 
-  if (pModName == sDInput || pModName == sDInput8) {
+  if (pModName == sDInput) {
     if (!oDllUnregisterServer)
       oDllUnregisterServer = GetSysProc(pModName, "DllUnregisterServer");
     if (oDllUnregisterServer)
