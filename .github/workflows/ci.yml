@@ -14,7 +14,7 @@ on:
     paths: ['**/premake5.lua', '**/*.h', '**/*.c']
 
 env:
-  SOLUTION_FILE_PATH: ./build/openspy-client.sln
+  SOLUTION_FILE_PATH: ./build/khaldun.net-client.sln
   BUILD_CONFIGURATION: Release
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
@@ -52,18 +52,18 @@ jobs:
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Platform=Win32 /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
-    - name: Pack artifacts
-      id: pack_artifacts
-      if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
-      run: |
-        7z a openspy.zip .\bin\*.dll
+    # - name: Pack artifacts
+    #   id: pack_artifacts
+    #   if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
+    #   run: |
+    #     7z a openspy.zip .\bin\*.dll
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: dinput
         path: |
-          openspy.zip
+          .\bin\dinput.dll
 
     # - name: Create release
     #   id: create_release

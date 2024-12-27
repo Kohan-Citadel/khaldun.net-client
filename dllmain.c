@@ -1,8 +1,8 @@
 // dllmain.c
 
 /*
- * OpenSpy Client
- * https://github.com/anzz1/openspy-client
+ * Khaldun.net Client
+ * https://github.com/Kohan-Citadel/khaldun.net-client
  *
  */
 

@@ -22,21 +22,13 @@ typedef long (__stdcall *DllGetClassObject_fn)(REFCLSID rclsid, REFIID riid, LPV
 DllGetClassObject_fn oDllGetClassObject = 0;
 
 long __stdcall p_DllCanUnloadNow(void) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DllCanUnloadNow=p_DllCanUnloadNow")
-#else
-  #pragma comment(linker, "/EXPORT:DllCanUnloadNow=_p_DllCanUnloadNow@0")
-#endif
+#pragma comment(linker, "/EXPORT:DllCanUnloadNow=_p_DllCanUnloadNow@0")
 
   return 1;
 }
 
 long __stdcall p_DllRegisterServer(void) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DllRegisterServer=p_DllRegisterServer")
-#else
-  #pragma comment(linker, "/EXPORT:DllRegisterServer=_p_DllRegisterServer@0")
-#endif
+#pragma comment(linker, "/EXPORT:DllRegisterServer=_p_DllRegisterServer@0")
 
   if (pModName == sDInput ) {
     if (!oDllRegisterServer)
@@ -49,11 +41,7 @@ long __stdcall p_DllRegisterServer(void) {
 }
 
 long __stdcall p_DllUnregisterServer(void) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DllUnregisterServer=p_DllUnregisterServer")
-#else
-  #pragma comment(linker, "/EXPORT:DllUnregisterServer=_p_DllUnregisterServer@0")
-#endif
+#pragma comment(linker, "/EXPORT:DllUnregisterServer=_p_DllUnregisterServer@0")
 
   if (pModName == sDInput) {
     if (!oDllUnregisterServer)
@@ -66,11 +54,7 @@ long __stdcall p_DllUnregisterServer(void) {
 }
 
 long __stdcall p_DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DllGetClassObject=p_DllGetClassObject")
-#else
-  #pragma comment(linker, "/EXPORT:DllGetClassObject=_p_DllGetClassObject@12")
-#endif
+#pragma comment(linker, "/EXPORT:DllGetClassObject=_p_DllGetClassObject@12")
 
   if (pModName) {
     if (!oDllGetClassObject)
@@ -82,7 +66,6 @@ long __stdcall p_DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv) {
   return 1;
 }
 
-#ifndef _WIN64
 __noinline static void ue2_patch_ipdrv() {
   HMODULE ipdrv = LoadLibraryA("IpDrv.dll");
   if (ipdrv) {
@@ -146,6 +129,6 @@ void* __stdcall hk_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
   }
   return GetProcAddress(hModule, lpProcName);
 }
-#endif // _WIN64
+
 
 #endif // __SHARED_H
