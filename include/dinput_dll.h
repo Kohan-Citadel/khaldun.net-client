@@ -14,11 +14,7 @@ typedef long (__stdcall *DirectInputCreateW_fn)(HINSTANCE hinst, DWORD dwVersion
 DirectInputCreateW_fn oDirectInputCreateW = 0;
 
 long __stdcall p_DirectInputCreateA(HINSTANCE hinst, DWORD dwVersion, /* LPDIRECTINPUTA* */ LPVOID *lplpDirectInput, /* LPUNKNOWN */ LPVOID punkOuter) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DirectInputCreateA=p_DirectInputCreateA")
-#else
-  #pragma comment(linker, "/EXPORT:DirectInputCreateA=_p_DirectInputCreateA@16")
-#endif
+#pragma comment(linker, "/EXPORT:DirectInputCreateA=_p_DirectInputCreateA@16")
 
   if (!oDirectInputCreateA) {
     oDirectInputCreateA = GetSysProc(sDInput, "DirectInputCreateA");
@@ -36,11 +32,7 @@ long __stdcall p_DirectInputCreateA(HINSTANCE hinst, DWORD dwVersion, /* LPDIREC
 }
 
 long __stdcall p_DirectInputCreateEx(HINSTANCE hinst, DWORD dwVersion, REFIID riidltf, LPVOID *ppvOut, /* LPUNKNOWN */ LPVOID punkOuter) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DirectInputCreateEx=p_DirectInputCreateEx")
-#else
-  #pragma comment(linker, "/EXPORT:DirectInputCreateEx=_p_DirectInputCreateEx@20")
-#endif
+#pragma comment(linker, "/EXPORT:DirectInputCreateEx=_p_DirectInputCreateEx@20")
 
   if (!oDirectInputCreateEx) {
     oDirectInputCreateEx = GetSysProc(sDInput, "DirectInputCreateEx");
@@ -58,11 +50,7 @@ long __stdcall p_DirectInputCreateEx(HINSTANCE hinst, DWORD dwVersion, REFIID ri
 }
 
 long __stdcall p_DirectInputCreateW(HINSTANCE hinst, DWORD dwVersion, /* LPDIRECTINPUTW* */ LPVOID *lplpDirectInput, /* LPUNKNOWN */ LPVOID punkOuter) {
-#ifdef _WIN64
-  #pragma comment(linker, "/EXPORT:DirectInputCreateW=p_DirectInputCreateW")
-#else
-  #pragma comment(linker, "/EXPORT:DirectInputCreateW=_p_DirectInputCreateW@16")
-#endif
+#pragma comment(linker, "/EXPORT:DirectInputCreateW=_p_DirectInputCreateW@16")
 
   if (!oDirectInputCreateW) {
     oDirectInputCreateW = GetSysProc(sDInput, "DirectInputCreateW");

@@ -1,6 +1,6 @@
-workspace "openspy-client"
+workspace "khaldun.net-client"
   configurations { "Release" }
-  platforms { "Win32", "x64" }
+  platforms { "Win32" }
   location "build"
   objdir ("build/obj")
   buildlog ("build/log/%{prj.name}.log")
@@ -22,24 +22,16 @@ workspace "openspy-client"
     optimize "Speed"
     symbols "Off"
 
-  filter "platforms:Win32"
-    architecture "x86"
+  architecture "x86"
 
-  filter "platforms:x64"
-    architecture "x64"
-    linkoptions { "/HIGHENTROPYVA:NO" }
-
-project "openspy-client"
+project "khaldun.net-client"
   kind "SharedLib"
   language "C"
   targetextension ".dll"
   targetdir "bin"
   files { "dllmain.c", "include/*.h", "iathook/iathook.h" }
   entrypoint "DllMain"
-  filter "platforms:Win32"
-    targetname "openspy.x86"
-  filter "platforms:x64"
-    targetname "openspy.x64"
+  targetname "dinput"
 
 if _ACTION and _ACTION >= "vs2010" then
   require "vstudio"

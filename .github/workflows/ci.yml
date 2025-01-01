@@ -14,7 +14,7 @@ on:
     paths: ['**/premake5.lua', '**/*.h', '**/*.c']
 
 env:
-  SOLUTION_FILE_PATH: ./build/openspy-client.sln
+  SOLUTION_FILE_PATH: ./build/khaldun.net-client.sln
   BUILD_CONFIGURATION: Release
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
@@ -52,30 +52,37 @@ jobs:
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Platform=Win32 /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
-    - name: Pack artifacts
-      id: pack_artifacts
-      if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
-      run: |
-        7z a openspy.zip .\bin\*.dll
-
-    - name: Create release
-      id: create_release
-      if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
-      uses: anzz1/action-create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Pack artifacts
+    #   id: pack_artifacts
+    #   if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
+    #   run: |
+    #     7z a openspy.zip .\bin\*.dll
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
-        tag_schema: semantic
+        name: dinput
+        path: |
+          .\bin\dinput.dll
 
-    - name: Upload release
-      id: upload_release
-      if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: .\openspy.zip
-        asset_name: openspy.zip
-        asset_content_type: application/zip
+    # - name: Create release
+    #   id: create_release
+    #   if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
+    #   uses: anzz1/action-create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_schema: semantic
+
+    # - name: Upload release
+    #   id: upload_release
+    #   if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }} 
+    #     asset_path: .\openspy.zip
+    #     asset_name: openspy.zip
+    #     asset_content_type: application/zip
 
