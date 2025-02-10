@@ -361,7 +361,6 @@ __forceinline static int fesl_copy_string(char* dst, const char* src) {
   return 0;
 }
 
-#ifndef _WIN64
 __forceinline static BOOL IsWow64(void) {
   void* fnIsWow64Process;
   BOOL bIsWow64 = FALSE;
@@ -378,14 +377,13 @@ __forceinline static UINT GetSysWow64Dir(LPSTR lpBuffer, UINT uSize) {
   if (!fnGetSystemWow64DirectoryA) return 0;
   return ((UINT (__stdcall *)(LPSTR,UINT)) (void*)(fnGetSystemWow64DirectoryA))(lpBuffer, uSize);
 }
-#endif // !_WIN64
 
 __forceinline static void InitSysDir() {
-#ifndef _WIN64
-  if (IsWow64()) gSysLen = GetSysWow64Dir(gSysDir, MAX_PATH+1);
+  if (IsWow64())
+    gSysLen = GetSysWow64Dir(gSysDir, MAX_PATH+1);
   else
-#endif
-  gSysLen = GetSystemDirectoryA(gSysDir, MAX_PATH+1);
+    gSysLen = GetSystemDirectoryA(gSysDir, MAX_PATH+1);
+    
   if (gSysLen && gSysLen < MAX_PATH) {
     while (gSysDir[gSysLen] == '\0')
       gSysLen--;

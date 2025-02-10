@@ -1,55 +1,14 @@
 // dllmain.c
 
 /*
- * OpenSpy Client
- * https://github.com/anzz1/openspy-client
+ * Khaldun.net Client
+ * https://github.com/Kohan-Citadel/khaldun.net-client
  *
  */
 
 #include "include/global.h"
 #include "include/shared.h"
-#include "include/version_dll.h"
 #include "include/dinput_dll.h"
-#include "include/dinput8_dll.h"
-#include "include/dsound_dll.h"
-#include "include/winmm_dll.h"
-
-#include "include/game_cry.h"
-#include "include/game_cry2.h"
-#ifndef _WIN64
-  #include "include/game_sr2.h"
-  #include "include/game_cmr5.h"
-  #include "include/game_ut3.h"
-  #include "include/game_pk.h"
-  #include "include/game_vc2.h"
-  #include "include/game_halo.h"
-  #include "include/game_aowht.h"
-  #include "include/game_swrc.h"
-  #include "include/game_fear.h"
-  #include "include/game_sam.h"
-  #include "include/game_bond.h"
-  #include "include/game_dh2k.h"
-  #include "include/game_go.h"
-  #include "include/game_t3.h"
-  #include "include/game_mvau.h"
-  #include "include/game_mtg.h"
-  #include "include/game_thug2.h"
-  #include "include/game_rof.h"
-  #include "include/game_hd2.h"
-  #include "include/game_stbc.h"
-  #include "include/game_bfme2.h"
-  #include "include/game_blood2.h"
-  #include "include/game_dmntn.h"
-  #include "include/game_xml2.h"
-  #include "include/game_ts.h"
-  #include "include/game_gt.h"
-  #include "include/game_sof2.h"
-  #include "include/game_mua.h"
-  #include "include/game_sacrifice.h"
-  #include "include/game_nolf.h"
-  #include "include/game_bf2142.h"
-  #include "include/game_stlegacy.h"
-#endif // !_WIN64
 
 #include "include/picoupnp.h"
 #include "iathook/iathook.h"
@@ -191,7 +150,7 @@ int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
     DisableThreadLibraryCalls(hInstDLL);
 
     // Pin this module to memory
-    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCSTR)&p_DirectInput8Create, &hm);
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_PIN, sDInput, &hm);
 
     // SecuROM guard
     if (!LocalDirFileExists("disable_securom_guard.txt") && securom_check(hm))
@@ -205,126 +164,7 @@ int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
     InitSysDir();
 
     // Proxy DLL feature
-    if (GetModuleFileNameA(hm, s, 511)) {
-      s[511] = 0;
-      p = __strrchr(s, '\\');
-      if (p) {
-        p++;
-        if (!__stricmp(p, sDInput)) // dinput.dll
-          dinput_hook();
-        else if (!__stricmp(p, sDInput8)) // dinput8.dll
-          dinput8_hook();
-        else if (!__stricmp(p, sDSound)) // dsound.dll
-          dsound_hook();
-        else if (!__stricmp(p, sVersion)) // version.dll
-          version_hook();
-        else if (!__stricmp(p, sWinmm)) // winmm.dll
-          winmm_hook();
-      }
-    }
-
-    // Per-game patches
-    if (GetModuleFileNameA(0, s, 511)) {
-      s[511] = 0;
-      p = __strrchr(s, '\\');
-      if (p) {
-        p++;
-        if (!__stricmp(p, "crysis.exe") || !__stricmp(p, "crysis64.exe") || !__stricmp(p, "crysisdedicatedserver.exe") || !__stricmp(p, "crysiswarsdedicatedserver.exe") || !__stricmp(p, "crysisheadlessserver.exe")) { // Crysis / Crysis Wars
-          force_bind_ip = 0;
-          patch_cry();
-        } else if (!__stricmp(p, "crysis2.exe") || !__stricmp(p, "crysis2dedicatedserver.exe")) { // Crysis 2
-          force_bind_ip = 0;
-          patch_cry2();
-        }
-#ifndef _WIN64
-        else if (!__stricmp(p, "sr2_pc.exe")) { // Saints Row 2
-          patch_sr2();
-        } else if (!__stricmp(p, "cmr5.exe")) { // Colin McRae Rally 2005
-          patch_cmr5();
-        } else if (!__stricmp(p, "ut3.exe")) { // Unreal Tournament 3
-          patch_ut3();
-        } else if (!__stricmp(p, "painkiller.exe")) { // Painkiller
-          patch_pk();
-        } else if (!__stricmp(p, "halo.exe")) { // Halo CE
-          patch_halo();
-        } else if (!__stricmp(p, "actofwar_hightreason.exe")) { // Act of War - High Treason
-          patch_aowht();
-        } else if (!__stricmp(p, "dh2004.exe") || !__stricmp(p, "dh2005.exe")) { // Deer Hunter 2004 / 2005
-          patch_dh2k();
-        } else if (!__stricmp(p, "globalops.exe") || !__stricmp(p, "goserver.exe")) { // Global Operations
-          patch_go();
-        } else if (!__stricmp(p, "t3.exe")) { // Terminator 3
-          patch_t3();
-        } else if (!__stricmp(p, "mxvsatv.exe")) { // MX vs. ATV Unleashed
-          patch_mvau();
-        } else if (!__stricmp(p, "mtgbattlegrounds.exe")) { // Magic: The Gathering - Battlegrounds
-          patch_mtg();
-        } else if (!__stricmp(p, "thug2.exe")) { // Tony Hawk's Underground 2
-          patch_thug2();
-        } else if (!__stricmp(p, "legends.exe")) { // Rise Of Nations - Rise Of Legends
-          patch_rof();
-        } else if (!__stricmp(p, "hd2.exe") || !__stricmp(p, "hd2ds.exe") || !__stricmp(p, "hd2_sabresquadron.exe") || !__stricmp(p, "hd2ds_sabresquadron.exe")) { // Hidden & Dangerous 2
-          patch_hd2();
-        } else if (!__stricmp(p, "stbc.exe")) { // Star Trek - Bridge Commander
-          patch_stbc();
-        } else if (!__stricmp(p, "blood2.exe") || !__stricmp(p, "blood2sv.exe") || !__stricmp(p, "b2nmsrv.exe")) { // Blood II - The Chosen
-          patch_blood2();
-        } else if (!__stricmp(p, "damngame.exe")) { // Damnation
-          patch_dmntn();
-        } else if (!__stricmp(p, "xmen2.exe")) { // X-Men Legends II
-          patch_xml2();
-        } else if (!__stricmp(p, "timeshift.exe")) { // TimeShift
-          patch_ts();
-        } else if (!__stricmp(p, "gt.exe")) { // Gene Troopers
-          patch_gt();
-        } else if (!__stricmp(p, "sof2mp.exe")) { // Soldier of Fortune 2
-          patch_sof2();
-        } else if (!__stricmp(p, "sacrifice.exe")) { // Sacrifice
-          patch_sacrifice();
-        } else if (!__stricmp(p, "nolfserv.exe")) { // No One Lives Forever (Server)
-          patch_nolf_srv();
-        } else if (!__stricmp(p, "bf2142.exe")) { // Battlefield 2142
-          patch_bf2142();
-        } else if (!__stricmp(p, "legacy.exe")) { // Star Trek: Legacy
-          patch_stlegacy();
-        } else if (!__stricmp(p, "serioussam.exe") || !__stricmp(p, "sam2.exe") || !__stricmp(p, "dedicatedserver.exe")) { // Serious Sam 1 & 2
-          force_bind_ip = 0;
-          patch_sam();
-        } else if (!__stricmp(p, "swrepubliccommando.exe")) { // Star Wars - Republic Commando
-          force_bind_ip = 0;
-          patch_swrc();
-        } else if (!__stricmp(p, "vietcong2.exe") || !__stricmp(p, "vc2ded.exe")) { // Vietcong 2
-          force_bind_ip = 0;
-          patch_vc2();
-        } else if (!__stricmp(p, "fearmp.exe") || !__stricmp(p, "fearxp.exe") || !__stricmp(p, "fearxp2.exe")) { // FEAR (Client)
-          force_bind_ip = 0;
-          patch_fear_cli();
-        } else if (!__stricmp(p, "fearserver.exe") || !__stricmp(p, "fearserverxp.exe")) { // FEAR (Server)
-          force_bind_ip = 0;
-          patch_fear_srv();
-        } else if (!__stricmp(p, "bond.exe") || !__stricmp(p, "bond_ded.exe")) { // James Bond - Nightfire
-          force_bind_ip = 0;
-          patch_bond();
-        } else if (!__stricmp(p, "mow_assault_squad.exe")) { // Men of War - Assault Squad
-          force_bind_ip = 0;
-        } else if (!__stricmp(p, "ut2003.exe")) { // Unreal Tournament 2003
-          ue2_patch_ipdrv();
-        } else if (!__stricmp(p, "fear2.exe")) { // FEAR 2
-          gs_replace_pubkey(0);
-        } else if (!__stricmp(p, "game.dat")) {
-          char* p2 = GetModExpName(GetModuleHandleA(0));
-          if (p2) {
-            if (!__strcmp(p2, "RTS.exe")) patch_bfme2(); // Battle for Middle-earth II / Rise of the Witch King
-          }
-        } else if (!__stricmp(p, "game.exe")) {
-          LPGUID pguid = GetModPdbGuid(GetModuleHandleA(0));
-          if (pguid) {
-            if (!__memcmp(pguid, &mua_guid, sizeof(GUID))) patch_mua(); // Marvel Ultimate Alliance
-          }
-        }
-#endif // !_WIN64
-      }
-    }
+    dinput_hook();
 
     // Hook API calls
     if (!ogethostbyname) {
