@@ -5,13 +5,19 @@
  * https://github.com/Kohan-Citadel/khaldun.net-client
  *
  */
-
 #include "include/global.h"
 #include "include/shared.h"
 #include "include/dinput_dll.h"
 
 #include "include/picoupnp.h"
 #include "iathook/iathook.h"
+
+#include <stdio.h>
+#include <winsock2.h>
+
+#pragma comment(lib, "Shell32.lib")    // ShellExecute library
+#pragma comment(lib, "advapi32.lib")   // RegEdit Library
+#pragma comment(lib,"ws2_32.lib")      // Winsock Library
 
 // Redirect all bind() to 0.0.0.0
 static int force_bind_ip = 1;
@@ -139,9 +145,135 @@ __forceinline static void DisableTeredoTunneling(void) {
   CloseHandle(CreateThread(0, 0, teredoThread, 0, 0, 0));
 }
 
+// check if the server is up, and don't patch if it is
+// this prevents the game from hanging if the server is down
+// and will allow players to still direct connect
+// Return Values:
+//   0: sucessfully connected to server and completed handshake with OpenSpy
+//   1: could not connect to server
+//  -1: connected to server but didn't receive OpenSpy handshake
+// -1 is the issue we care about, because the game will hang indefinitely in this scenario
+int serverCheck(void) {
+  FILE* log = fopen("dinput.log", "w");
+  fprintf(log, "Starting Server Check\n");
+
+  WSADATA wsa;
+  char *hostname = "khaldun.net";
+	char ip[100];
+	struct hostent *he;
+	struct in_addr **addr_list;
+	int i;
+
+  SOCKET s;
+  struct sockaddr_in server;
+  char *message , server_reply[101];
+  int recv_size;
+	
+	fprintf(log, "\nInitialising Winsock...");
+	if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+	{
+		fprintf(log, "Failed. Error Code : %d",WSAGetLastError());
+    fclose(log);
+    WSACleanup();
+		return 1;
+	}
+	fprintf(log, "Initialised.\n");
+
+  if ( (s = socket( AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
+	{
+		fprintf(log, "Could not create socket : %d" , WSAGetLastError());
+    fclose(log);
+    WSACleanup();
+		return 1;
+	}
+	fputs("Socket created.\n", log);
+
+  if ( (he = gethostbyname( hostname ) ) == NULL)
+  {
+    //gethostbyname failed
+    fprintf(log, "gethostbyname failed : %d" , WSAGetLastError());
+    closesocket(s);
+    fclose(log);
+    WSACleanup();
+    return 1;
+  }
+        
+  //Cast the h_addr_list to in_addr , since h_addr_list also has the ip address in long format only
+  addr_list = (struct in_addr **) he->h_addr_list;
+  
+  for(i = 0; addr_list[i] != NULL; i++) 
+  {
+    //Return the first one;
+    strcpy(ip , inet_ntoa(*addr_list[i]) );
+    fprintf(log, "%s resolved to : %s\n" , hostname , ip);
+  }
+
+  server.sin_addr.s_addr = addr_list[0]->S_un.S_addr;
+	server.sin_family = AF_INET;
+	server.sin_port = htons( 28900 );
+
+	//Connect to remote server
+  fprintf(log, "Attempting connection...");
+	if (connect(s , (struct sockaddr *)&server , sizeof(server)) < 0)
+	{
+		fputs("connect error", log);
+    fclose(log);
+    closesocket(s);
+    WSACleanup();
+    return -1;
+	}
+	
+	fputs("Connected\n", log);
+
+  fprintf(log, "Setting socket timeout...");
+  int recvTimeout = 5000;
+  int optLen = sizeof(int);
+  if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &recvTimeout, optLen) == SOCKET_ERROR) {
+    fprintf(log, "setsockopt for SO_RCVTIMEO failed with error: %u\n", WSAGetLastError());
+    fclose(log);
+    closesocket(s);
+    WSACleanup();
+    return -1;
+  }
+  fputs("socket timeout set!\n", log);
+
+  //Receive a reply from the server
+  fprintf(log, "Listening for data for %ims...", recvTimeout);
+	if((recv_size = recv(s , server_reply , 100 , 0)) == SOCKET_ERROR)
+	{
+		fputs("recv failed\n", log);
+    fclose(log);
+    closesocket(s);
+    WSACleanup();
+    return -1;
+	} else {
+    fprintf(log, "Reply received. recv_size: %i\n", recv_size);
+    fprintf(log, "Extracted string: %s compared with %s\n", server_reply, "\\basic\\\\secure\\");
+    
+    if (strncmp(server_reply, "\\basic\\\\secure\\", 15) == 0) {
+      fputs("Server is online!\n", log);
+    } else {
+      fputs("Server is offline :(\n", log);
+      fclose(log);
+      closesocket(s);
+      WSACleanup();
+      return -1;
+    }
+  }
+  
+  fclose(log);
+  closesocket(s);
+  WSACleanup();
+  return 0;
+}
+
 static volatile int initialized = 0;
 int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
   if (dwReason == DLL_PROCESS_ATTACH && !initialized) {
+    
+    if (serverCheck() == -1)
+      return TRUE;
+
     HMODULE hm = 0;
     char* p = 0;
     char s[512];
