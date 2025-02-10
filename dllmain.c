@@ -17,7 +17,8 @@
 
 #pragma comment(lib, "Shell32.lib")    // ShellExecute library
 #pragma comment(lib, "advapi32.lib")   // RegEdit Library
-#pragma comment(lib,"ws2_32.lib")      // Winsock Library
+#pragma comment(lib, "ws2_32.lib")     // Winsock Library
+#pragma comment(lib, "msvcrt.lib")
 
 // Redirect all bind() to 0.0.0.0
 static int force_bind_ip = 1;
@@ -166,7 +167,7 @@ int serverCheck(void) {
 
   SOCKET s;
   struct sockaddr_in server;
-  char *message , server_reply[101];
+  char server_reply[101];
   int recv_size;
 	
 	fprintf(log, "\nInitialising Winsock...");
@@ -276,7 +277,6 @@ int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
 
     HMODULE hm = 0;
     char* p = 0;
-    char s[512];
 
     initialized = 1;
     DisableThreadLibraryCalls(hInstDLL);
