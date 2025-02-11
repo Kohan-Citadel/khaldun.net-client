@@ -19,6 +19,8 @@
 #include <shellapi.h>
 #include <shlobj.h>
 
+#include <stdio.h>
+
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 
@@ -306,9 +308,13 @@ __forceinline static void gs_replace_pubkey(ULONG_PTR addr) {
     write_mem(ptr, OSPubKey, 256);
 }
 
-__forceinline static int gs_copy_string(char* dst, const char* src) {
+__forceinline static int gs_copy_string(char* dst, const char* src, const char* patch_domain) {
+  FILE* fptr = fopen("dinput.log", "a");
+  
   char* p = 0;
   const char* s = src;
+  const char* pd = patch_domain;
+  fprintf(fptr, "called gs_copy string with hostname of %s:\n", pd);
   while (p = __stristr(s, "gamespy.")) {
     if (((p[8] == 'c' || p[8] == 'C') &&
          (p[9] == 'o' || p[9] == 'O') &&
@@ -335,17 +341,22 @@ __forceinline static int gs_copy_string(char* dst, const char* src) {
         s = p+8;
         continue;
       }
-      p[0] = 'k';
-      p[1] = 'h';
-      p[2] = 'a';
-      p[3] = 'l';
-      p[4] = 'd';
-      p[5] = 'u';
-      p[6] = 'n';
+      // copies patch_domain into p
+      p[0] = pd[0];
+      p[1] = pd[1];
+      p[2] = pd[2];
+      p[3] = pd[3];
+      p[4] = pd[4];
+      p[5] = pd[5];
+      p[6] = pd[6];
       s = p+11;
     }
+    fprintf(fptr, "Patched string!\n\tsrc: %s\n\ts: %s\n\tdst: %s\n\tp: %s\n\tpd: %s\n", src, s, dst, p, pd);
+    fclose(fptr);
     return 1;
   }
+  fprintf(fptr, "Didn't Patch string!\n\tsrc: %s\n\ts: %s\n\tdst: %s\n\tp: %s\n\tpd: %s\n", src, s, dst, p, pd);
+  fclose(fptr);
   return 0;
 }
 
