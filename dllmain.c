@@ -260,7 +260,7 @@ int serverCheck(const char *hostname) {
     fprintf(log, "Reply received. recv_size: %i\n", recv_size);
     fprintf(log, "Extracted string: %s compared with %s\n", server_reply, "\\basic\\\\secure\\");
     
-    if (strncmp(server_reply, "\\basic\\\\secure\\", 15) == 0) {
+    if (__strncmp(server_reply, "\\basic\\\\secure\\", 15) == 0) {
       fputs("Server is online!\n\n", log);
     } else {
       fputs("Server is offline :(\n\n", log);
