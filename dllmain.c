@@ -5,6 +5,7 @@
  * https://github.com/Kohan-Citadel/khaldun.net-client
  *
  */
+
 #include "include/global.h"
 #include "include/shared.h"
 #include "include/dinput_dll.h"
@@ -12,13 +13,14 @@
 #include "include/picoupnp.h"
 #include "iathook/iathook.h"
 
-#include <stdio.h>
 #include <winsock2.h>
 
 #pragma comment(lib, "Shell32.lib")    // ShellExecute library
 #pragma comment(lib, "advapi32.lib")   // RegEdit Library
 #pragma comment(lib, "ws2_32.lib")     // Winsock Library
-//#pragma comment(lib, "msvcrt.lib")
+
+#define KHALDUN "khaldun.net"
+#define OPENSPY "openspy.net"
 
 char* patch_domain;
 
@@ -69,7 +71,7 @@ LPHOSTENT __stdcall hk_gethostbyname(const char* name) {
   char s[512];
   if (name && gs_copy_string(s, name, patch_domain))
     return ogethostbyname(s);
-  else if (name && fesl_copy_string(s, name))
+  else if (name && fesl_copy_string(s, name, patch_domain))
     return ogethostbyname(s);
   else
     return ogethostbyname(name);
@@ -157,8 +159,6 @@ __forceinline static void DisableTeredoTunneling(void) {
 //    -2: connected to server but didn't receive OpenSpy handshake
 // -2 is the issue we care about, because the game will hang indefinitely in this scenario
 int serverCheck(const char *hostname) {
-  FILE* log = fopen("dinput.log", "a");
-  fprintf(log, "Starting Server Check for %s\n", hostname);
   char masterServer[20];
   __strcpy(masterServer, "master.");
   __strcat(masterServer, hostname);
@@ -173,31 +173,22 @@ int serverCheck(const char *hostname) {
   char server_reply[101];
   int recv_size;
 	
-	fprintf(log, "\nInitialising Winsock...");
 	if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
 	{
-		fprintf(log, "Failed. Error Code : %d\n\n",WSAGetLastError());
-    fclose(log);
     WSACleanup();
 		return -1;
 	}
-	fprintf(log, "Initialised.\n");
 
   if ( (s = socket( AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
-	{
-		fprintf(log, "Could not create socket : %d\n\n" , WSAGetLastError());
-    fclose(log);
+	{;
     WSACleanup();
 		return -1;
 	}
-	fputs("Socket created.\n", log);
 
   if ( (he = gethostbyname( masterServer ) ) == NULL)
   {
     //gethostbyname failed
-    fprintf(log, "gethostbyname failed : %d\n\n" , WSAGetLastError());
     closesocket(s);
-    fclose(log);
     WSACleanup();
     return -1;
   }
@@ -206,72 +197,40 @@ int serverCheck(const char *hostname) {
   addr_list = (struct in_addr **) he->h_addr_list;
   
   server.sin_family = AF_INET;
-  //if ( __strncmp(hostname, "khaldun.net", 11) == 0 )
-  //	server.sin_port = htons( 80 );
-  //else
-    server.sin_port = htons( 28900 );
+  server.sin_port = htons( 28900 );
 
   BOOL connected = FALSE;
   for(i = 0; addr_list[i] != NULL; i++) 
   {
     server.sin_addr.s_addr = addr_list[0]->S_un.S_addr;
-    fprintf(log, "%s resolved to : %s\n" , masterServer , inet_ntoa( server.sin_addr ));
     //Connect to remote server
-    fprintf(log, "Attempting connection to %s...", inet_ntoa(server.sin_addr ));
-    if (connect(s , (struct sockaddr *)&server , sizeof(server)) < 0) {
-      fputs("connect error\n", log);
-    } else {
-      fputs("Connected\n", log);
+    if (connect(s , (struct sockaddr *)&server , sizeof(server)) >= 0) {
       connected = TRUE;
       break;
     }
   }
   if (!connected) {
-    fputs("connection failed for all addresses!\n", log);
-    fclose(log);
     closesocket(s);
     WSACleanup();
     return -2;
   }
 
  
-  fprintf(log, "Setting socket timeout...");
   int recvTimeout = 5000;
   int optLen = sizeof(int);
   if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &recvTimeout, optLen) == SOCKET_ERROR) {
-    fprintf(log, "setsockopt for SO_RCVTIMEO failed with error: %u\n", WSAGetLastError());
-    fclose(log);
     closesocket(s);
     WSACleanup();
     return -2;
   }
-  fputs("socket timeout set!\n", log);
 
   //Receive a reply from the server
-  fprintf(log, "Listening for data on %i for %ims...", ntohs(server.sin_port), recvTimeout);
-	if((recv_size = recv(s , server_reply , 100 , 0)) == SOCKET_ERROR)
+	if((recv_size = recv(s , server_reply , 100 , 0)) == SOCKET_ERROR && __strncmp(server_reply, "\\basic\\\\secure\\", 15) != 0)
 	{
-		fputs("recv failed\n", log);
-    fclose(log);
     closesocket(s);
     WSACleanup();
     return -2;
-	} else {
-    fprintf(log, "Reply received. recv_size: %i\n", recv_size);
-    fprintf(log, "Extracted string: %s compared with %s\n", server_reply, "\\basic\\\\secure\\");
-    
-    if (__strncmp(server_reply, "\\basic\\\\secure\\", 15) == 0) {
-      fputs("Server is online!\n\n", log);
-    } else {
-      fputs("Server is offline :(\n\n", log);
-      fclose(log);
-      closesocket(s);
-      WSACleanup();
-      return -2;
-    }
   }
-  fflush(log);
-  fclose(log);
   closesocket(s);
   WSACleanup();
   return TRUE;
@@ -280,14 +239,13 @@ int serverCheck(const char *hostname) {
 static volatile int initialized = 0;
 int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
   if (dwReason == DLL_PROCESS_ATTACH && !initialized) {
-    fclose(fopen("dinput.log", "w"));
     // if khaldun.net is down, fall back on openspy.net
-    if (serverCheck("khaldun.net") == TRUE) {
+    if (serverCheck(KHALDUN) == TRUE) {
       // server online, so patch for khaldun.net
-      patch_domain = "khaldun.net";
-    } else if (serverCheck("openspy.net") == TRUE) {
+      patch_domain = KHALDUN;
+    } else if (serverCheck(OPENSPY) == TRUE) {
       // fall back on OS and patch for openspy.net
-      patch_domain = "openspy.net";
+      patch_domain = OPENSPY;
     } else {
       // both servers are down, so don't patch
       patch_domain = "gamespy.net";

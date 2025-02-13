@@ -19,8 +19,6 @@
 #include <shellapi.h>
 #include <shlobj.h>
 
-#include <stdio.h>
-
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 
@@ -309,12 +307,9 @@ __forceinline static void gs_replace_pubkey(ULONG_PTR addr) {
 }
 
 __forceinline static int gs_copy_string(char* dst, const char* src, const char* patch_domain) {
-  FILE* fptr = fopen("dinput.log", "a");
-  
   char* p = 0;
   const char* s = src;
   const char* pd = patch_domain;
-  fprintf(fptr, "called gs_copy string with hostname of %s:\n", pd);
   while (p = __stristr(s, "gamespy.")) {
     if (((p[8] == 'c' || p[8] == 'C') &&
          (p[9] == 'o' || p[9] == 'O') &&
@@ -351,22 +346,18 @@ __forceinline static int gs_copy_string(char* dst, const char* src, const char* 
       p[6] = pd[6];
       s = p+11;
     }
-    fprintf(fptr, "Patched string!\n\tsrc: %s\n\ts: %s\n\tdst: %s\n\tp: %s\n\tpd: %s\n", src, s, dst, p, pd);
-    fclose(fptr);
     return 1;
   }
-  fprintf(fptr, "Didn't Patch string!\n\tsrc: %s\n\ts: %s\n\tdst: %s\n\tp: %s\n\tpd: %s\n", src, s, dst, p, pd);
-  fclose(fptr);
   return 0;
 }
 
-__forceinline static int fesl_copy_string(char* dst, const char* src) {
+__forceinline static int fesl_copy_string(char* dst, const char* src, const char* patch_domain) {
   char* p = __stristr(src, "fesl.ea.com");
   if (p) {
     p += 5;
     unsigned int len = (((p-src) > 500) ? 500 : (p-src));
     __strncpy(dst, src, len);
-    __strcpy(dst+len, "khaldun.net");
+    __strcpy(dst+len, patch_domain);
     return 1;
   }
   return 0;
