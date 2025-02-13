@@ -12,7 +12,7 @@ workspace "khaldun.net-client"
   floatingpointexceptions "Off"
   intrinsics "On"
   rtti "Off"
-  flags { "NoBufferSecurityCheck", "NoIncrementalLink", "NoManifest", "NoPCH", "NoRuntimeChecks" }
+  flags { "NoBufferSecurityCheck", "NoIncrementalLink", "NoManifest", "NoPCH", "NoRuntimeChecks", "OmitDefaultLibrary" }
   buildoptions { "/kernel", "/Gs1000000" }
   linkoptions { "/kernel", "/SAFESEH:NO", "/GUARD:NO", "/EMITPOGOPHASEINFO", "/RELEASE", "/DEBUG:NONE", "/NOIMPLIB", "/NOEXP", "/IGNORE:4104" }
 
