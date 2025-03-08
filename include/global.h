@@ -306,9 +306,10 @@ __forceinline static void gs_replace_pubkey(ULONG_PTR addr) {
     write_mem(ptr, OSPubKey, 256);
 }
 
-__forceinline static int gs_copy_string(char* dst, const char* src) {
+__forceinline static int gs_copy_string(char* dst, const char* src, const char* patch_domain) {
   char* p = 0;
   const char* s = src;
+  const char* pd = patch_domain;
   while (p = __stristr(s, "gamespy.")) {
     if (((p[8] == 'c' || p[8] == 'C') &&
          (p[9] == 'o' || p[9] == 'O') &&
@@ -335,13 +336,14 @@ __forceinline static int gs_copy_string(char* dst, const char* src) {
         s = p+8;
         continue;
       }
-      p[0] = 'k';
-      p[1] = 'h';
-      p[2] = 'a';
-      p[3] = 'l';
-      p[4] = 'd';
-      p[5] = 'u';
-      p[6] = 'n';
+      // copies patch_domain into p
+      p[0] = pd[0];
+      p[1] = pd[1];
+      p[2] = pd[2];
+      p[3] = pd[3];
+      p[4] = pd[4];
+      p[5] = pd[5];
+      p[6] = pd[6];
       s = p+11;
     }
     return 1;
@@ -349,13 +351,13 @@ __forceinline static int gs_copy_string(char* dst, const char* src) {
   return 0;
 }
 
-__forceinline static int fesl_copy_string(char* dst, const char* src) {
+__forceinline static int fesl_copy_string(char* dst, const char* src, const char* patch_domain) {
   char* p = __stristr(src, "fesl.ea.com");
   if (p) {
     p += 5;
     unsigned int len = (((p-src) > 500) ? 500 : (p-src));
     __strncpy(dst, src, len);
-    __strcpy(dst+len, "khaldun.net");
+    __strcpy(dst+len, patch_domain);
     return 1;
   }
   return 0;

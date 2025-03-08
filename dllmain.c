@@ -13,6 +13,17 @@
 #include "include/picoupnp.h"
 #include "iathook/iathook.h"
 
+#include <winsock2.h>
+
+#pragma comment(lib, "Shell32.lib")    // ShellExecute library
+#pragma comment(lib, "advapi32.lib")   // RegEdit Library
+#pragma comment(lib, "ws2_32.lib")     // Winsock Library
+
+#define KHALDUN "khaldun.net"
+#define OPENSPY "openspy.net"
+
+char* patch_domain;
+
 // Redirect all bind() to 0.0.0.0
 static int force_bind_ip = 1;
 
@@ -58,9 +69,9 @@ int __stdcall hk_bind(SOCKET s, struct sockaddr *addr, int namelen) {
 
 LPHOSTENT __stdcall hk_gethostbyname(const char* name) {
   char s[512];
-  if (name && gs_copy_string(s, name))
+  if (name && gs_copy_string(s, name, patch_domain))
     return ogethostbyname(s);
-  else if (name && fesl_copy_string(s, name))
+  else if (name && fesl_copy_string(s, name, patch_domain))
     return ogethostbyname(s);
   else
     return ogethostbyname(name);
@@ -68,7 +79,7 @@ LPHOSTENT __stdcall hk_gethostbyname(const char* name) {
 
 HANDLE __stdcall hk_WSAAsyncGetHostByName(HWND hWnd, unsigned int wMsg, const char *name, char *buf, int buflen) {
   char s[512];
-  if (name && gs_copy_string(s, name))
+  if (name && gs_copy_string(s, name, patch_domain))
     return oWSAAsyncGetHostByName(hWnd, wMsg, s, buf, buflen);
   else
     return oWSAAsyncGetHostByName(hWnd, wMsg, name, buf, buflen);
@@ -76,7 +87,7 @@ HANDLE __stdcall hk_WSAAsyncGetHostByName(HWND hWnd, unsigned int wMsg, const ch
 
 HINTERNET __stdcall hk_InternetOpenUrlA(HINTERNET hInternet, LPCSTR lpszUrl, LPCSTR lpszHeaders, DWORD dwHeadersLength, DWORD dwFlags, DWORD_PTR dwContext) {
   char s[512];
-  if (lpszUrl && gs_copy_string(s, lpszUrl))
+  if (lpszUrl && gs_copy_string(s, lpszUrl, patch_domain))
     return oInternetOpenUrlA(hInternet, s, lpszHeaders, dwHeadersLength, dwFlags, dwContext);
   else
     return oInternetOpenUrlA(hInternet, lpszUrl, lpszHeaders, dwHeadersLength, dwFlags, dwContext);
@@ -139,12 +150,109 @@ __forceinline static void DisableTeredoTunneling(void) {
   CloseHandle(CreateThread(0, 0, teredoThread, 0, 0, 0));
 }
 
+// check if the server is up, and don't patch if it is
+// this prevents the game from hanging if the server is down
+// and will allow players to still direct connect
+// Return Values:
+//  TRUE: sucessfully connected to server and completed handshake with OpenSpy
+//    -1: could not connect to server
+//    -2: connected to server but didn't receive OpenSpy handshake
+// -2 is the issue we care about, because the game will hang indefinitely in this scenario
+int serverCheck(const char *hostname) {
+  char masterServer[20];
+  __strcpy(masterServer, "master.");
+  __strcat(masterServer, hostname);
+
+  WSADATA wsa;
+	struct hostent *he;
+	struct in_addr **addr_list;
+	int i;
+
+  SOCKET s;
+  struct sockaddr_in server;
+  char server_reply[101];
+  int recv_size;
+	
+	if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+	{
+    WSACleanup();
+		return -1;
+	}
+
+  if ( (s = socket( AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
+	{;
+    WSACleanup();
+		return -1;
+	}
+
+  if ( (he = gethostbyname( masterServer ) ) == NULL)
+  {
+    //gethostbyname failed
+    closesocket(s);
+    WSACleanup();
+    return -1;
+  }
+        
+  //Cast the h_addr_list to in_addr , since h_addr_list also has the ip address in long format only
+  addr_list = (struct in_addr **) he->h_addr_list;
+  
+  server.sin_family = AF_INET;
+  server.sin_port = htons( 28900 );
+
+  BOOL connected = FALSE;
+  for(i = 0; addr_list[i] != NULL; i++) 
+  {
+    server.sin_addr.s_addr = addr_list[0]->S_un.S_addr;
+    //Connect to remote server
+    if (connect(s , (struct sockaddr *)&server , sizeof(server)) >= 0) {
+      connected = TRUE;
+      break;
+    }
+  }
+  if (!connected) {
+    closesocket(s);
+    WSACleanup();
+    return -2;
+  }
+
+ 
+  int recvTimeout = 5000;
+  int optLen = sizeof(int);
+  if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &recvTimeout, optLen) == SOCKET_ERROR) {
+    closesocket(s);
+    WSACleanup();
+    return -2;
+  }
+
+  //Receive a reply from the server
+	if((recv_size = recv(s , server_reply , 100 , 0)) == SOCKET_ERROR && __strncmp(server_reply, "\\basic\\\\secure\\", 15) != 0)
+	{
+    closesocket(s);
+    WSACleanup();
+    return -2;
+  }
+  closesocket(s);
+  WSACleanup();
+  return TRUE;
+}
+
 static volatile int initialized = 0;
 int __stdcall DllMain(HINSTANCE hInstDLL, DWORD dwReason, LPVOID lpReserved) {
   if (dwReason == DLL_PROCESS_ATTACH && !initialized) {
+    // if khaldun.net is down, fall back on openspy.net
+    if (serverCheck(KHALDUN) == TRUE) {
+      // server online, so patch for khaldun.net
+      patch_domain = KHALDUN;
+    } else if (serverCheck(OPENSPY) == TRUE) {
+      // fall back on OS and patch for openspy.net
+      patch_domain = OPENSPY;
+    } else {
+      // both servers are down, so don't patch
+      patch_domain = "gamespy.net";
+    }
+
     HMODULE hm = 0;
     char* p = 0;
-    char s[512];
 
     initialized = 1;
     DisableThreadLibraryCalls(hInstDLL);
